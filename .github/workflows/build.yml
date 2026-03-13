@@ -9,8 +9,20 @@ on:
 
 jobs:
   build:
-    name: Build (linux/amd64)
-    runs-on: ubuntu-latest
+    name: Build (${{ matrix.os }})
+    runs-on: ${{ matrix.runner }}
+
+    strategy:
+      matrix:
+        include:
+          - os: linux/amd64
+            runner: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            artifact: rust-learn
+          - os: windows/amd64
+            runner: windows-latest
+            target: x86_64-pc-windows-msvc
+            artifact: rust-learn.exe
 
     steps:
       - name: Checkout
@@ -19,7 +31,7 @@ jobs:
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
         with:
-          targets: x86_64-unknown-linux-gnu
+          targets: ${{ matrix.target }}
 
       - name: Cache cargo
         uses: actions/cache@v4
@@ -33,11 +45,11 @@ jobs:
             ${{ runner.os }}-cargo-
 
       - name: Build
-        run: cargo build --release --target x86_64-unknown-linux-gnu
+        run: cargo build --release --target ${{ matrix.target }}
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: rust-learn-linux-amd64
-          path: target/x86_64-unknown-linux-gnu/release/rust-learn
+          name: rust-learn-${{ matrix.os == 'linux/amd64' && 'linux' || 'windows' }}-amd64
+          path: target/${{ matrix.target }}/release/${{ matrix.artifact }}
           if-no-files-found: error
